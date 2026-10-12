@@ -1,0 +1,170 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px 12px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.card {
+  width: 100%;
+  max-width: 600px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
+}
+
+h1 { margin: 0; font-size: 1.5rem; }
+h2 { margin: 0 0 10px; font-size: 1.1rem; }
+.sub { margin: 4px 0 20px; color: #64748b; font-size: 0.9rem; }
+
+/* ----- previous totals ----- */
+.prev {
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+.prev summary { cursor: pointer; font-weight: 600; font-size: 0.95rem; }
+.hint { margin: 10px 0; font-size: 0.85rem; color: #64748b; }
+.prev-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.prev-grid label { display: block; font-size: 0.8rem; color: #64748b; }
+.prev-grid input { margin-top: 4px; }
+
+/* ----- semesters ----- */
+.semester {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-size: 0.8rem; color: #64748b; padding: 0 4px 6px; }
+td { padding: 4px; }
+
+input, select {
+  width: 100%;
+  padding: 9px 10px;
+  font-size: 0.95rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+}
+input:focus, select:focus { outline: 2px solid #2563eb; border-color: transparent; }
+
+/* hide the little up/down arrows on number boxes */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+
+/* ----- course table ----- */
+.courses { table-layout: fixed; }
+.courses input { padding: 8px 6px; font-size: 0.9rem; }
+
+.c-code  { width: 25%; }
+.c-score { width: 19%; }
+.c-unit  { width: 14%; }
+.c-grade { width: 11%; text-align: center; }
+.c-pt    { width: 9%;  text-align: center; }
+.c-cp    { width: 10%; text-align: center; }
+.c-x     { width: 12%; }
+
+.grade-cell, .point-cell, .cp-cell {
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #475569;
+}
+.grade-cell.grade-A { color: #15803d; }
+.grade-cell.grade-B { color: #1d4ed8; }
+.grade-cell.grade-C { color: #b45309; }
+.grade-cell.grade-D { color: #c2410c; }
+.grade-cell.grade-E { color: #b91c1c; }
+.grade-cell.grade-F { color: #7f1d1d; }
+
+input.invalid { border-color: #dc2626; background: #fef2f2; }
+
+.remove {
+  width: 100%;
+  max-width: 36px;
+  padding: 8px 0;
+  border: none;
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.actions { display: flex; gap: 8px; margin-top: 12px; }
+
+button {
+  font-size: 0.95rem;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+}
+button.secondary { background: #e2e8f0; color: #0f172a; }
+
+.sem-result {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #334155;
+}
+
+/* ----- cumulative summary (like the portal) ----- */
+.summary { margin-top: 16px; }
+.summary-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
+
+.summary-table { font-size: 0.9rem; text-align: center; }
+.summary-table th {
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 7px 4px;
+  text-align: center;
+  font-size: 0.75rem;
+}
+.summary-table td { padding: 9px 4px; border-top: 1px solid #e2e8f0; }
+.summary-table th:first-child,
+.summary-table td:first-child {
+  text-align: left;
+  padding-left: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+}
+.summary-table .cum td { background: #f0fdf4; font-weight: 600; }
+.gpa-cell { font-weight: 700; color: #1d4ed8; }
+.summary-table .cum .gpa-cell { color: #15803d; }
+
+/* ----- final result ----- */
+.result {
+  padding: 18px;
+  text-align: center;
+  background: #eff6ff;
+  border-radius: 12px;
+}
+.label { font-size: 0.85rem; color: #475569; margin-bottom: 4px; }
+.gpa { font-size: 3rem; font-weight: 700; color: #1d4ed8; line-height: 1; }
+.meta { margin-top: 8px; color: #475569; font-size: 0.9rem; }
+.class { margin-top: 6px; font-weight: 600; }
+
+.scale { margin-top: 16px; font-size: 0.85rem; color: #475569; }
+.scale summary { cursor: pointer; }
