@@ -1,20 +1,19 @@
-// ===== GPA & CGPA Calculator (score-based) =====
-// You type the SCORE and the UNITS. The grade, point and CP are worked out for you.
+// ===== CGPA Tracker =====
+// Type a SCORE and the UNITS for each course. The grade and points are worked out for you.
 //
-//   CP   = Credit Point = units x grade point
-//   TNU  = Total Number of Units
-//   TNUP = Total Number of Units Passed (score 40 and above)
-//   TCP  = Total Credit Points
-//   GPA  = TCP / TNU
-//
-//   CUR = this semester only
-//   CUM = everything so far (previous totals + this semester)
+//   TCP = Total Credit Points = every course's (units x grade point), added up
+//   TLU = Total Load Units    = every course's units, added up
+//   GPA = TCP / TLU
+//   CGPA = the same sum over every semester together
 
 // The name we save our data under in localStorage
-const STORAGE_KEY = "gpaDataV2";
+const STORAGE_KEY = "gpaDataV3";
 
 // The ids of our two semesters (they match the ids in index.html)
 const SEMESTERS = ["sem1", "sem2"];
+
+// All the grade letters, best to worst
+const GRADE_LETTERS = ["A", "B", "C", "D", "E", "F"];
 
 
 // ----- GRADING -----
@@ -38,21 +37,12 @@ function getClassOfDegree(gpa) {
   return "Pass";
 }
 
-// GPA = TCP / TNU (and 0 if there are no units yet)
-function calcGpa(tcp, tnu) {
-  if (tnu > 0) {
-    return tcp / tnu;
+// GPA = TCP / TLU (and 0 if there are no units yet)
+function calcGpa(tcp, tlu) {
+  if (tlu > 0) {
+    return tcp / tlu;
   }
   return 0;
-}
-
-// Add two sets of totals together
-function addTotals(a, b) {
-  return {
-    tnu: a.tnu + b.tnu,
-    tnup: a.tnup + b.tnup,
-    tcp: a.tcp + b.tcp,
-  };
 }
 
 
@@ -64,7 +54,7 @@ function saveData(data) {
     // JSON.stringify turns the data into text, because localStorage only stores text
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
-    // Saving can fail (for example in private browsing). The calculator still works.
+    // Saving can fail (for example in private browsing). The tracker still works.
   }
 }
 
@@ -83,60 +73,63 @@ function loadData() {
 }
 
 
-// ----- ROWS -----
+// ----- COURSE ROWS -----
 
-// Get the <tbody> of a semester, e.g. getTbody("sem1")
-function getTbody(semId) {
-  return document.getElementById(semId + "-courses");
+// Get the box that holds a semester's courses, e.g. getList("sem1")
+function getList(semId) {
+  return document.getElementById(semId + "-list");
 }
 
-// Add one course row to a semester's table
+// Add one course to a semester
 function addRow(semId, code = "", score = "", units = "") {
-  const row = document.createElement("tr");
+  const row = document.createElement("div");
+  row.className = "course";
 
   row.innerHTML = `
-    <td><input type="text" class="code" placeholder="COS111"></td>
-    <td><input type="number" class="score" min="0" max="100" placeholder="0-100" inputmode="numeric"></td>
-    <td><input type="number" class="units" min="0" max="10" placeholder="3" inputmode="numeric"></td>
-    <td class="grade-cell">-</td>
-    <td class="point-cell">-</td>
-    <td class="cp-cell">-</td>
-    <td><button type="button" class="remove">&times;</button></td>
+    <input type="text" class="code" placeholder="COS111" aria-label="Course code">
+    <input type="number" class="score" min="0" max="100" placeholder="0-100" inputmode="numeric" aria-label="Score">
+    <input type="number" class="units" min="0" max="10" placeholder="3" inputmode="numeric" aria-label="Units">
+    <button type="button" class="remove" aria-label="Remove course">&times;</button>
+    <div class="result">
+      <span class="chip">-</span>
+      <span class="result-text">Enter a score and units</span>
+    </div>
   `;
 
-  // Fill in the values (used when loading saved courses)
+  // Fill in the values (used when loading saved courses or imported ones)
   row.querySelector(".code").value = code;
   row.querySelector(".score").value = score;
   row.querySelector(".units").value = units;
 
-  // When the x button is clicked: delete this row and recalculate
+  // When the x button is clicked: delete this course and recalculate
   row.querySelector(".remove").addEventListener("click", function () {
     row.remove();
     calculateAll();
   });
 
-  getTbody(semId).appendChild(row);
+  getList(semId).appendChild(row);
 }
 
 
 // ----- CALCULATION -----
 
-// Work out TNU, TNUP and TCP for ONE semester.
-// It also fills in the Grade, Pt and CP columns of every row.
+// Work out TCP and TLU for ONE semester.
+// It also fills in the grade chip and the little result line under every course.
 function calculateSemester(semId) {
-  const rows = getTbody(semId).querySelectorAll("tr");
+  const rows = getList(semId).querySelectorAll(".course");
 
-  const totals = { tnu: 0, tnup: 0, tcp: 0 };
+  let tcp = 0;
+  let tlu = 0;
   const courses = []; // what the user typed, so we can save it
+  const gradeCounts = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 };
 
-  // Go through every row, one at a time
+  // Go through every course, one at a time
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     const scoreInput = row.querySelector(".score");
     const unitsInput = row.querySelector(".units");
-    const gradeCell = row.querySelector(".grade-cell");
-    const pointCell = row.querySelector(".point-cell");
-    const cpCell = row.querySelector(".cp-cell");
+    const chip = row.querySelector(".chip");
+    const resultText = row.querySelector(".result-text");
 
     const code = row.querySelector(".code").value;
     const scoreText = scoreInput.value.trim();
@@ -144,44 +137,41 @@ function calculateSemester(semId) {
 
     courses.push({ code: code, score: scoreText, units: unitsText });
 
-    // Start with empty results for this row
-    gradeCell.textContent = "-";
-    gradeCell.className = "grade-cell";
-    pointCell.textContent = "-";
-    cpCell.textContent = "-";
+    // Start with an empty result for this course
+    chip.textContent = "-";
+    chip.className = "chip";
+    resultText.textContent = "Enter a score and units";
 
     // A score must be a number from 0 to 100. Units must be more than 0.
     const score = Number(scoreText);
     const units = Number(unitsText);
-    const scoreOk = scoreText !== "" && score >= 0 && score <= 100;
-    const unitsOk = unitsText !== "" && units > 0;
+    const scoreBad = scoreText !== "" && (score < 0 || score > 100);
+    const unitsBad = unitsText !== "" && !(units > 0);
 
     // Turn the box red if something was typed but it is not valid
-    scoreInput.classList.toggle("invalid", scoreText !== "" && !scoreOk);
-    unitsInput.classList.toggle("invalid", unitsText !== "" && !unitsOk);
+    scoreInput.classList.toggle("invalid", scoreBad);
+    unitsInput.classList.toggle("invalid", unitsBad);
 
-    // Only rows with a valid score AND valid units are counted
-    if (scoreOk && unitsOk) {
+    if (scoreBad) {
+      resultText.textContent = "Score must be between 0 and 100";
+    } else if (unitsBad) {
+      resultText.textContent = "Units must be more than 0";
+    } else if (scoreText !== "" && unitsText !== "") {
+      // Both are valid, so this course counts
       const grade = getGrade(score);
-      const cp = units * grade.point;
+      const cp = units * grade.point; // credit points for this course
 
-      totals.tnu = totals.tnu + units;
-      totals.tcp = totals.tcp + cp;
+      tcp = tcp + cp;
+      tlu = tlu + units;
+      gradeCounts[grade.letter] = gradeCounts[grade.letter] + 1;
 
-      // A course is "passed" when the score is 40 or more
-      if (score >= 40) {
-        totals.tnup = totals.tnup + units;
-      }
-
-      // Show this row's results
-      gradeCell.textContent = grade.letter;
-      gradeCell.className = "grade-cell grade-" + grade.letter;
-      pointCell.textContent = grade.point;
-      cpCell.textContent = cp;
+      chip.textContent = grade.letter;
+      chip.className = "chip g-" + grade.letter;
+      resultText.textContent = grade.point + " points x " + units + " units = " + cp + " CP";
     }
   }
 
-  return { totals: totals, courses: courses };
+  return { tcp: tcp, tlu: tlu, courses: courses, gradeCounts: gradeCounts };
 }
 
 // Read one number from a box (blank or invalid counts as 0)
@@ -193,76 +183,99 @@ function readNumber(id) {
   return value;
 }
 
-// Read the "previous totals" boxes
-function readPrevious() {
-  return {
-    tnu: readNumber("prev-tnu"),
-    tnup: readNumber("prev-tnup"),
-    tcp: readNumber("prev-tcp"),
-  };
-}
+// Draw the coloured grade bar in the top card
+function showDistribution(counts) {
+  const bar = document.getElementById("dist");
+  bar.innerHTML = "";
 
-// Show one row of a summary table. prefix is like "sem1-cur" or "sem2-cum".
-function showSummaryRow(prefix, totals) {
-  document.getElementById(prefix + "-tnu").textContent = totals.tnu;
-  document.getElementById(prefix + "-tnup").textContent = totals.tnup;
-  document.getElementById(prefix + "-tcp").textContent = totals.tcp;
-  document.getElementById(prefix + "-gpa").textContent =
-    calcGpa(totals.tcp, totals.tnu).toFixed(2);
+  let total = 0;
+  for (let i = 0; i < GRADE_LETTERS.length; i++) {
+    total = total + counts[GRADE_LETTERS[i]];
+  }
+
+  // Nothing to show yet
+  if (total === 0) {
+    bar.hidden = true;
+    return;
+  }
+  bar.hidden = false;
+
+  // One coloured slice for each grade that appears
+  for (let i = 0; i < GRADE_LETTERS.length; i++) {
+    const letter = GRADE_LETTERS[i];
+    if (counts[letter] > 0) {
+      const slice = document.createElement("span");
+      slice.className = "seg g-" + letter;
+      slice.style.flex = counts[letter]; // wider slice = more courses
+      slice.textContent = letter + " " + counts[letter];
+      bar.appendChild(slice);
+    }
+  }
 }
 
 // Recalculate everything, show it, and save it
 function calculateAll() {
-  const prev = readPrevious();
+  const prevTlu = readNumber("prev-tlu");
+  const prevTcp = readNumber("prev-tcp");
   const sem1 = calculateSemester("sem1");
   const sem2 = calculateSemester("sem2");
 
-  // CUM after 1st semester = previous + 1st semester
-  // CUM after 2nd semester = that + 2nd semester
-  const cum1 = addTotals(prev, sem1.totals);
-  const cum2 = addTotals(cum1, sem2.totals);
+  // Each semester's own results
+  document.getElementById("sem1-tcp").textContent = sem1.tcp;
+  document.getElementById("sem1-tlu").textContent = sem1.tlu;
+  document.getElementById("sem1-gpa").textContent = calcGpa(sem1.tcp, sem1.tlu).toFixed(2);
 
-  document.getElementById("prev-gpa").textContent =
-    calcGpa(prev.tcp, prev.tnu).toFixed(2);
+  document.getElementById("sem2-tcp").textContent = sem2.tcp;
+  document.getElementById("sem2-tlu").textContent = sem2.tlu;
+  document.getElementById("sem2-gpa").textContent = calcGpa(sem2.tcp, sem2.tlu).toFixed(2);
 
-  showSummaryRow("sem1-cur", sem1.totals);
-  showSummaryRow("sem1-cum", cum1);
-  showSummaryRow("sem2-cur", sem2.totals);
-  showSummaryRow("sem2-cum", cum2);
+  document.getElementById("prev-gpa").textContent = calcGpa(prevTcp, prevTlu).toFixed(2);
 
-  // The big CGPA is the CUM after the second semester
-  const cgpa = calcGpa(cum2.tcp, cum2.tnu);
+  // CGPA = everything added together: earlier totals + both semesters
+  const totalTcp = prevTcp + sem1.tcp + sem2.tcp;
+  const totalTlu = prevTlu + sem1.tlu + sem2.tlu;
+  const cgpa = calcGpa(totalTcp, totalTlu);
 
-  document.getElementById("total-tcp").textContent = cum2.tcp;
-  document.getElementById("total-tnu").textContent = cum2.tnu;
+  document.getElementById("total-tcp").textContent = totalTcp;
+  document.getElementById("total-tlu").textContent = totalTlu;
   document.getElementById("cgpa").textContent = cgpa.toFixed(2);
 
-  if (cum2.tnu > 0) {
+  if (totalTlu > 0) {
     document.getElementById("classOfDegree").textContent = getClassOfDegree(cgpa);
   } else {
-    document.getElementById("classOfDegree").textContent = "";
+    document.getElementById("classOfDegree").textContent = "Add your courses to begin";
   }
 
+  // Count the grades from both semesters for the grade bar
+  const counts = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 };
+  for (let i = 0; i < GRADE_LETTERS.length; i++) {
+    const letter = GRADE_LETTERS[i];
+    counts[letter] = sem1.gradeCounts[letter] + sem2.gradeCounts[letter];
+  }
+  showDistribution(counts);
+
   // Save everything in localStorage
-  saveData({ prev: prev, sem1: sem1.courses, sem2: sem2.courses });
+  saveData({
+    prev: { tlu: prevTlu, tcp: prevTcp },
+    sem1: sem1.courses,
+    sem2: sem2.courses,
+  });
 }
 
 
 // ----- BUTTONS AND TYPING -----
 
-// Recalculate when the user types in the "previous totals" boxes
-const prevIds = ["prev-tnu", "prev-tnup", "prev-tcp"];
-for (let i = 0; i < prevIds.length; i++) {
-  document.getElementById(prevIds[i]).addEventListener("input", calculateAll);
-}
+// Recalculate when the user types in the "earlier totals" boxes
+document.getElementById("prev-tlu").addEventListener("input", calculateAll);
+document.getElementById("prev-tcp").addEventListener("input", calculateAll);
 
 // Set up the buttons for each semester
 for (let i = 0; i < SEMESTERS.length; i++) {
   const semId = SEMESTERS[i];
-  const tbody = getTbody(semId);
+  const list = getList(semId);
 
-  // Recalculate whenever the user types in a row
-  tbody.addEventListener("input", calculateAll);
+  // Recalculate whenever the user types in a course
+  list.addEventListener("input", calculateAll);
 
   // "Add course" button
   document.getElementById(semId + "-add").addEventListener("click", function () {
@@ -272,7 +285,7 @@ for (let i = 0; i < SEMESTERS.length; i++) {
 
   // "Clear" button
   document.getElementById(semId + "-clear").addEventListener("click", function () {
-    tbody.innerHTML = "";
+    list.innerHTML = "";
     addRow(semId);
     calculateAll();
   });
@@ -284,20 +297,17 @@ for (let i = 0; i < SEMESTERS.length; i++) {
 // When the page opens, load any saved data
 const savedData = loadData();
 
-// Put back the "previous totals" (and open the section if there are any)
+// Put back the earlier totals (and open that section if there are any)
 if (savedData !== null && savedData.prev) {
   const p = savedData.prev;
 
-  if (p.tnu > 0) {
-    document.getElementById("prev-tnu").value = p.tnu;
-  }
-  if (p.tnup > 0) {
-    document.getElementById("prev-tnup").value = p.tnup;
+  if (p.tlu > 0) {
+    document.getElementById("prev-tlu").value = p.tlu;
   }
   if (p.tcp > 0) {
     document.getElementById("prev-tcp").value = p.tcp;
   }
-  if (p.tnu > 0 || p.tnup > 0 || p.tcp > 0) {
+  if (p.tlu > 0 || p.tcp > 0) {
     document.getElementById("prev-details").open = true;
   }
 }
@@ -313,8 +323,8 @@ for (let i = 0; i < SEMESTERS.length; i++) {
     }
   }
 
-  // If the semester is still empty, start with one blank row
-  if (getTbody(semId).children.length === 0) {
+  // If the semester is still empty, start with one blank course
+  if (getList(semId).children.length === 0) {
     addRow(semId);
   }
 }

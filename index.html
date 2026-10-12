@@ -3,145 +3,107 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GPA Calculator</title>
+  <title>CGPA Tracker</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="card">
-    <h1>GPA &amp; CGPA Calculator</h1>
-    <p class="sub">Enter score and units &middot; grades are worked out for you &middot; saved in your browser</p>
+  <main class="app">
 
-    <!-- PREVIOUS TOTALS (optional): skip typing courses and go straight to the totals -->
-    <details class="prev" id="prev-details">
-      <summary>Already have totals from your portal? Enter them here</summary>
-      <p class="hint">Skip typing courses. These totals are added to the cumulative (CUM) figures below.</p>
-      <div class="prev-grid">
-        <label>TNU
-          <input type="number" id="prev-tnu" min="0" placeholder="0" inputmode="numeric">
+    <!-- RESULT -->
+    <header class="hero">
+      <p class="eyebrow">CGPA tracker &middot; 5.0 scale</p>
+      <div class="hero-row">
+        <div>
+          <div class="hero-gpa" id="cgpa">0.00</div>
+          <div class="hero-class" id="classOfDegree">Add your courses to begin</div>
+        </div>
+        <div class="hero-math">
+          <div>TCP <b id="total-tcp">0</b></div>
+          <div>TLU <b id="total-tlu">0</b></div>
+        </div>
+      </div>
+      <div class="dist" id="dist" hidden></div>
+    </header>
+
+    <!-- IMPORT A COURSE FORM -->
+    <section class="card import">
+      <h2>Import a course form</h2>
+      <p class="hint">Upload a PDF or a screenshot of your course form and the course codes and units are filled in for you. The file is read on your device and is never uploaded anywhere.</p>
+      <input type="file" id="form-file" accept=".pdf,image/*">
+      <p class="status" id="import-status" role="status"></p>
+
+      <div id="import-review" hidden>
+        <p class="hint">Check what was found. Fix any mistakes, or untick courses you don't want.</p>
+        <div class="review-head"><span></span><span>Code</span><span>Units</span></div>
+        <div id="review-list"></div>
+        <div class="review-actions">
+          <select id="import-target" aria-label="Which semester to add them to">
+            <option value="sem1">Add to first semester</option>
+            <option value="sem2">Add to second semester</option>
+          </select>
+          <button type="button" id="import-add">Add courses</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- EARLIER TOTALS (optional) -->
+    <details class="card carry" id="prev-details">
+      <summary>Earlier totals (optional)</summary>
+      <p class="hint">Already know your TLU and TCP from earlier sessions? Enter them here instead of typing those courses. They are included in your CGPA.</p>
+      <div class="two">
+        <label>Earlier TLU
+          <input type="number" id="prev-tlu" min="0" placeholder="0" inputmode="numeric">
         </label>
-        <label>TNUP
-          <input type="number" id="prev-tnup" min="0" placeholder="0" inputmode="numeric">
-        </label>
-        <label>TCP
+        <label>Earlier TCP
           <input type="number" id="prev-tcp" min="0" placeholder="0" inputmode="numeric">
         </label>
       </div>
-      <div class="sem-result">GPA of these totals: <b id="prev-gpa">0.00</b></div>
+      <p class="mini">GPA of these totals: <b id="prev-gpa">0.00</b></p>
     </details>
 
     <!-- FIRST SEMESTER -->
-    <section class="semester">
-      <h2>First Semester</h2>
-      <table class="courses">
-        <thead>
-          <tr>
-            <th class="c-code">Code</th>
-            <th class="c-score">Score</th>
-            <th class="c-unit">Unit</th>
-            <th class="c-grade">Grade</th>
-            <th class="c-pt">Pt</th>
-            <th class="c-cp">CP</th>
-            <th class="c-x"></th>
-          </tr>
-        </thead>
-        <tbody id="sem1-courses"></tbody>
-      </table>
-      <div class="actions">
-        <button id="sem1-add" type="button">+ Add course</button>
-        <button id="sem1-clear" type="button" class="secondary">Clear</button>
+    <section class="card sem" id="sem1">
+      <div class="sem-head">
+        <h2>First semester</h2>
+        <div class="sem-gpa">GPA <b id="sem1-gpa">0.00</b></div>
       </div>
-
-      <div class="summary">
-        <div class="summary-title">Cumulative Summary</div>
-        <table class="summary-table">
-          <thead>
-            <tr><th></th><th>TNU</th><th>TNUP</th><th>TCP</th><th>GPA</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>CUR</td>
-              <td id="sem1-cur-tnu">0</td>
-              <td id="sem1-cur-tnup">0</td>
-              <td id="sem1-cur-tcp">0</td>
-              <td id="sem1-cur-gpa" class="gpa-cell">0.00</td>
-            </tr>
-            <tr class="cum">
-              <td>CUM</td>
-              <td id="sem1-cum-tnu">0</td>
-              <td id="sem1-cum-tnup">0</td>
-              <td id="sem1-cum-tcp">0</td>
-              <td id="sem1-cum-gpa" class="gpa-cell">0.00</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="list-head"><span>Course</span><span>Score</span><span>Units</span><span></span></div>
+      <div id="sem1-list"></div>
+      <div class="sem-foot">
+        <div class="actions">
+          <button id="sem1-add" type="button">+ Add course</button>
+          <button id="sem1-clear" type="button" class="ghost">Clear</button>
+        </div>
+        <div class="sem-math">TCP <b id="sem1-tcp">0</b> &divide; TLU <b id="sem1-tlu">0</b></div>
       </div>
     </section>
 
     <!-- SECOND SEMESTER -->
-    <section class="semester">
-      <h2>Second Semester</h2>
-      <table class="courses">
-        <thead>
-          <tr>
-            <th class="c-code">Code</th>
-            <th class="c-score">Score</th>
-            <th class="c-unit">Unit</th>
-            <th class="c-grade">Grade</th>
-            <th class="c-pt">Pt</th>
-            <th class="c-cp">CP</th>
-            <th class="c-x"></th>
-          </tr>
-        </thead>
-        <tbody id="sem2-courses"></tbody>
-      </table>
-      <div class="actions">
-        <button id="sem2-add" type="button">+ Add course</button>
-        <button id="sem2-clear" type="button" class="secondary">Clear</button>
+    <section class="card sem" id="sem2">
+      <div class="sem-head">
+        <h2>Second semester</h2>
+        <div class="sem-gpa">GPA <b id="sem2-gpa">0.00</b></div>
       </div>
-
-      <div class="summary">
-        <div class="summary-title">Cumulative Summary</div>
-        <table class="summary-table">
-          <thead>
-            <tr><th></th><th>TNU</th><th>TNUP</th><th>TCP</th><th>GPA</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>CUR</td>
-              <td id="sem2-cur-tnu">0</td>
-              <td id="sem2-cur-tnup">0</td>
-              <td id="sem2-cur-tcp">0</td>
-              <td id="sem2-cur-gpa" class="gpa-cell">0.00</td>
-            </tr>
-            <tr class="cum">
-              <td>CUM</td>
-              <td id="sem2-cum-tnu">0</td>
-              <td id="sem2-cum-tnup">0</td>
-              <td id="sem2-cum-tcp">0</td>
-              <td id="sem2-cum-gpa" class="gpa-cell">0.00</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="list-head"><span>Course</span><span>Score</span><span>Units</span><span></span></div>
+      <div id="sem2-list"></div>
+      <div class="sem-foot">
+        <div class="actions">
+          <button id="sem2-add" type="button">+ Add course</button>
+          <button id="sem2-clear" type="button" class="ghost">Clear</button>
+        </div>
+        <div class="sem-math">TCP <b id="sem2-tcp">0</b> &divide; TLU <b id="sem2-tlu">0</b></div>
       </div>
     </section>
 
-    <!-- FINAL RESULT -->
-    <section class="result">
-      <div class="label">CGPA</div>
-      <div class="gpa" id="cgpa">0.00</div>
-      <div class="meta">
-        TCP / TNU = <span id="total-tcp">0</span> / <span id="total-tnu">0</span>
-      </div>
-      <div class="class" id="classOfDegree"></div>
-    </section>
-
-    <details class="scale">
-      <summary>Grading scale</summary>
+    <details class="card scale">
+      <summary>How it is calculated</summary>
       <p>A = 5 (70&ndash;100) &middot; B = 4 (60&ndash;69) &middot; C = 3 (50&ndash;59) &middot; D = 2 (45&ndash;49) &middot; E = 1 (40&ndash;44) &middot; F = 0 (0&ndash;39)</p>
-      <p>TNU = total number of units &middot; TNUP = total number of units passed (score 40 and above) &middot; TCP = total credit points &middot; CP = unit &times; point</p>
+      <p>Credit points for a course = units &times; grade point. TCP is all the credit points added up, TLU is all the units added up, and GPA = TCP &divide; TLU. CGPA is the same sum over every semester together.</p>
     </details>
+
   </main>
 
   <script src="script.js"></script>
+  <script src="import.js"></script>
 </body>
 </html>
